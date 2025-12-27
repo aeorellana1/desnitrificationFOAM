@@ -14,3 +14,12 @@ Este documento describe:
 ---
 
 ## Instalación y preparación del entorno
+### Descarga de OpenFOAM
+
+La implementación se desarrolló sobre **OpenFOAM v2406**.  
+El código fuente se descarga directamente desde el repositorio oficial de OpenFOAM:
+
+```bash
+git clone --branch OpenFOAM-v2406 \
+    https://develop.openfoam.com/Development/openfoam.git \
+    ~/OpenFOAM-2406
