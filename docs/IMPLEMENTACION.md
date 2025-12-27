@@ -23,3 +23,19 @@ El código fuente se descarga directamente desde el repositorio oficial de OpenF
 git clone --branch OpenFOAM-v2406 \
     https://develop.openfoam.com/Development/openfoam.git \
     ~/OpenFOAM-2406
+```
+### Carga del entorno
+
+Una vez descargado OpenFOAM, se debe cargar el entorno de compilación:
+
+```bash
+source ~/OpenFOAM-2406/etc/bashrc
+```
+### Compilación base
+
+Para verificar que el entorno está correctamente configurado, se recomienda
+compilar al menos un solver o librería usando:
+
+```bash
+wmake
+```
