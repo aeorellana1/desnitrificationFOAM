@@ -14,7 +14,11 @@ Este documento describe:
 3. [Inicialización de campos](#inicialización-de-campos)
 4. [Gestión de fases y geometría](#gestión-de-fases-y-geometría)
 5. [Difusión morfológica del biofilm](#difusión-morfológica-del-biofilm)
-
+6. [Modelo de reacciones y transporte (NOx)](#modelo-de-reacciones-y-transporte-nox)
+7. [Crecimiento de biomasas](#crecimiento-de-biomasas)
+8. [Hidrodinámica y control numérico](#hidrodinámica-y-control-numérico)
+9. [Ejecución del solver y caso mínimo](#ejecución-del-solver-y-caso-mínimo)
+10. [Resumen de parámetros y unidades](#resumen-de-parámetros-y-unidades)
 ---
 
 ## Instalación y preparación del entorno
@@ -378,6 +382,22 @@ Las ecuaciones de conservación para las especies solubles se escriben como:
 
 ![NO2](https://latex.codecogs.com/svg.image?\frac{\partial(\varepsilon%20c_{NO_2})}{\partial%20t}-\nabla\cdot(\varepsilon%20D_{NO_2}\nabla%20c_{NO_2})=r_{NO_3}-r_{NO_2})
 
+**Donador soluble (S_b)**
+
+![Sb](https://latex.codecogs.com/svg.image?\frac{\partial(\varepsilon%20c_{Sb})}{\partial%20t}-\nabla\cdot(\varepsilon%20D_{Sb}\nabla%20c_{Sb})=y_{Sb/S0}R_{hyd}-(y_{Sb,NO_3}r_{NO_3}+y_{Sb,NO_2}r_{NO_2}))
+
+**Sulfato (SO₄²⁻)**
+
+![SO4](https://latex.codecogs.com/svg.image?\frac{\partial(\varepsilon%20c_{SO_4})}{\partial%20t}-\nabla\cdot(\varepsilon%20D_{SO_4}\nabla%20c_{SO_4})=y_{SO4,NO_3}r_{NO_3}+y_{SO4,NO_2}r_{NO_2})
+
+**Nitrógeno gaseoso disuelto (N₂)**
+
+![N2](https://latex.codecogs.com/svg.image?\frac{\partial(\varepsilon%20c_{N_2})}{\partial%20t}-\nabla\cdot(\varepsilon%20D_{N_2}\nabla%20c_{N_2})=r_{NO_2})
+
+**Azufre elemental (S⁰)**
+
+![S0](https://latex.codecogs.com/svg.image?\frac{\partial%20S^0}{\partial%20t}=-R_{hyd})
+
 
 ---
 
@@ -474,3 +494,66 @@ fvScalarMatrix MHidEqn
 MHidEqn.solve();
 
 ```
+---
+
+## Hidrodinámica y control numérico
+
+El campo de velocidades se resuelve mediante las ecuaciones de Navier–Stokes
+para flujo incompresible, acopladas al algoritmo PIMPLE. El efecto del biofilm
+y del pellet de azufre sólido se introduce mediante un término de resistencia
+tipo Darcy, que frena el flujo en regiones de baja permeabilidad.
+
+### Ecuación de momento (UEqn)
+
+La ecuación de cantidad de movimiento se  implementa explícitamente en `UEqn.H` mediante `fvm::Sp(darcyTerm,U)`.
+
+### Ecuación de presión (pEqn)
+
+La presión se resuelve para garantizar la conservación de masa, ajustando el
+flujo másico \(\phi\) en el medio poroso y asegurando la continuidad del flujo
+incompresible en todo el dominio.
+
+---
+
+### Control adaptativo del paso de tiempo (Δt)
+
+El solver utiliza un control adaptativo del paso de tiempo para mantener la
+estabilidad numérica frente a cinéticas rígidas y gradientes fuertes de biomasa
+y especies químicas.
+
+El paso de tiempo está limitado por:
+- el criterio de Courant,
+- la evolución temporal de la biomasa desnitrificante \(M\),
+- la evolución de \(NO_3^-\) y \(NO_2^-\),
+- opcionalmente el campo legado \(C\).
+
+Este control se implementa mediante el componente `timestepManager`, heredado
+del solver `biofilmFoam`, y configurado en los archivos `readTimeControls.H`
+y `setDeltaT.H`.
+
+Para cada variable controlada se define un error de truncamiento permitido
+(`truncationError_*`), a partir del cual se estima un paso de tiempo máximo
+compatible con la precisión deseada.
+
+El paso de tiempo final se selecciona como el mínimo entre:
+- el límite impuesto por Courant,
+- el límite impuesto por cada gestor temporal,
+- un factor de crecimiento máximo entre pasos consecutivos.
+
+Este enfoque permite capturar correctamente transitorios rápidos (por ejemplo,
+picos de nitrito) sin comprometer la eficiencia computacional.
+
+---
+
+## Ejecución del solver y caso mínimo
+
+El solver `desnitrificationFoam` se ejecuta dentro de un caso estándar de
+OpenFOAM, compuesto por las carpetas `0/`, `constant/` y `system/`.
+
+### Archivos requeridos
+
+- `0/`: campos iniciales (`U`, `p`, `M`, `Mhid`, `NO3`, `NO2`, `Csb`, `SO4`, `N2`, `S0`, `porosity`, `K`)
+- `constant/transportProperties`: parámetros físicos, cinéticos y estequiométricos
+- `system/controlDict`: control temporal y activación de opciones (`useC`, `advectSolutes`)
+- `system/fvSchemes`, `system/fvSolution`: esquemas numéricos y solvers lineales
+
