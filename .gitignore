@@ -1,0 +1,16 @@
+# OpenFOAM build
+*.o
+*.dep
+*.so
+lnInclude/
+Make/linux*
+Make/*Opt
+
+# Logs and results
+log.*
+processor*/
+[0-9]*/
+
+# OS
+.DS_Store
+Thumbs.db
