@@ -18,7 +18,7 @@ Este documento describe:
 7. [Crecimiento de biomasas](#crecimiento-de-biomasas)
 8. [Hidrodinámica y control numérico](#hidrodinámica-y-control-numérico)
 9. [Ejecución del solver y caso mínimo](#ejecución-del-solver-y-caso-mínimo)
-10. [Resumen de parámetros y unidades](#resumen-de-parámetros-y-unidades)
+
 ---
 
 ## Instalación y preparación del entorno
